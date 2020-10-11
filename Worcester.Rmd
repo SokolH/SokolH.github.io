@@ -1,0 +1,92 @@
+---
+title: "Worcester Maps"
+output: html_document
+---
+
+Here is a map of Worcester turnout rates for the latest municipal election:
+```{r, include = FALSE}
+library(leaflet)
+library(sf)
+library(readr)
+library(tigris)
+
+precincts<-st_read("D:/WVRI/Voting_Precincts.shp")
+turnout<-read_csv("D:/WVRI/Precinct Turnout.csv")
+
+precinctturnout<- geo_join(precincts,turnout,by_sp="NAME",by_df= "Ward")
+precinctturnout$rate<-100* precinctturnout$'Ballots Cast'/precinctturnout$'Registered Voters'
+precinctturnout$rate<-round(precinctturnout$rate,2)
+
+bins<-seq(0,35,5)
+
+fillcol<-colorBin("YlOrBr", domain = precinctturnout$rate, bins=bins)
+#c("#ADD8E6","#223395")
+
+label<-sprintf(
+  "<strong>Precinct %s</strong><br/>%g %% turnout</sup>", 
+  precinctturnout$NAME, precinctturnout$rate) %>% lapply(htmltools::HTML)
+
+u<-leaflet(precinctturnout)%>%addTiles()%>%
+  setView(lng=-71.80694444 ,lat= 42.25332222,zoom=12)%>%
+  addPolygons(fillColor=~fillcol(rate), fillOpacity=.75, weight=2,highlight = highlightOptions(
+                                        weight= 4, color= "#777", fillOpacity = .3,
+                                        bringToFront = TRUE),  label=label, 
+                                        labelOptions = labelOptions(
+                                        style = list("font-weight" = "normal", padding = "3px 8px"),
+                                        textsize = "15px",
+                                        direction = "auto"))%>%
+  addLegend(pal = fillcol, values =~rate, opacity = 0.7, title = "Percent Turnout",
+          position = "bottomright")
+```
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+u
+```
+
+Map of polling locations in Worcester:
+```{r, include=FALSE}
+library(sf)
+library(readr)
+library(leaflet)
+
+pollinglocations<-read_csv("D:/R Projects/Worcester/Shapefiles/Polling_locations.csv")
+
+votingprecincts<-st_read("D:/R Projects/Worcester/Shapefiles/City_Boundary.shp")
+
+precincts<-read_csv("D:/R Projects/Worcester/Polling Precincts.csv")
+
+precincts1<-precincts[,1]
+precincts2<-precincts[,c(2,3)]
+
+precincts2<-precincts2[-which(precincts2$Name %in% NA),]
+
+precincts1<-precincts1[-(51:143),]
+precincts<-cbind(precincts1, precincts2)
+
+pollinglocations<-pollinglocations[order(pollinglocations$NAME),]
+precincts<-precincts[order(precincts$Name),]
+polling<-cbind(pollinglocations, precincts)
+polling$NAME<-NULL
+
+polling<-splitstackshape::cSplit(polling, "Ward - Precinct", sep="-") 
+colnames(polling)[9]<-"Ward"
+colnames(polling)[10]<-"Precinct"
+
+label<-sprintf(
+  "<strong>Ward %g Precinct %g </strong><br/> %s <br> %s <sup> ", 
+ polling$Ward, polling$Precinct, pollinglocations$NAME, pollinglocations$FULLADD
+)%>%lapply(htmltools::HTML)
+
+o<-leaflet(votingprecincts)%>%addTiles()%>%setView(lng=-71.85, lat=42.26, zoom=10)%>%
+  addPolygons(fillOpacity=0, weight=1.5, group="outline")%>%
+  addCircleMarkers(polling,opacity=0, fillOpacity=1, fillColor = "#ff082d",
+          radius=3,lng=polling$X, lat= polling$Y, label=label)
+
+
+```
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+o
+```
+
+
