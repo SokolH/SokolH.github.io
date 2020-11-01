@@ -8,7 +8,6 @@ Here's a Map of all the restaurants in Boston:
 library(readr)
 library(sf)
 library(leaflet)
-library(widgetframe)
 
 
 restaurant_list<-read_csv("D:/R Projects/Boston/Boston Restaurants Updated.csv")
@@ -25,7 +24,7 @@ resmap<- leaflet(boston)%>%addTiles()%>%setView(lng=-71 ,lat= 42.28,zoom=12)%>%
 ```
 
 ```{r Boston restaurant map, echo=FALSE, message=FALSE, warning=FALSE}
-frameWidget(resmap)
+resmap
 ```
 
 
