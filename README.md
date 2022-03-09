@@ -1,2 +1,2 @@
 # SokolH.github.io
-Under Construnction.
+Currently under construnction.
